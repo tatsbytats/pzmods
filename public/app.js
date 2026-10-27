@@ -16,6 +16,8 @@ let serverBuild = '';
 let activeMod = null;
 let dialogOpener = null;
 let dialogIds = [];
+let dialogSession = 0;
+let requirements = null;
 
 function element(tag, className = '', text) {
   const node = document.createElement(tag);
@@ -284,7 +286,7 @@ function renderDialogDetails() {
   $('dialog-title').textContent = activeMod.title;
   $('dialog-workshop').textContent = `Workshop ID ${activeMod.id}`;
   $('dialog-steam').href = steamLink(activeMod.id, '').href;
-  $('dialog-description-text').textContent = activeMod.description || 'No description was provided. Open the Workshop page for details and requirements.';
+  $('dialog-description-text').textContent = activeMod.description || 'No description was provided. Open the Workshop page for details and dependencies.';
   $('dialog-preview').hidden = !activeMod.image;
   if (activeMod.image) $('dialog-image').src = activeMod.image;
   else $('dialog-image').removeAttribute('src');
@@ -312,7 +314,76 @@ function updateDialogState() {
   $('dialog-save-status').textContent = !valid ? 'Use up to 100 IDs, each no longer than 160 characters.'
     : !dialogIds.length ? 'Choose or enter Mod IDs to enable Load Mods copying.'
     : inLoadout ? 'Mod IDs saved to your loadout.' : 'These IDs will be used when you add this mod.';
+  if (requirements) renderRequirements();
 }
+
+function renderRequirements(feedback = '') {
+  const missing = requirements.filter(mod => !selected.has(mod.id));
+  const unavailable = requirements.some(mod => !mod.available);
+  $('requirements-list').replaceChildren(...requirements.map(mod => {
+    const saved = selected.get(mod.id);
+    const row = element('li', 'requirement-row');
+    row.dataset.requirementId = mod.id;
+    const info = element('div');
+    info.append(steamLink(mod.id, mod.title), element('p', 'requirement-meta', mod.direct ? 'Direct dependency' : 'Nested dependency'));
+    if (!mod.available) info.append(element('p', 'requirement-issue', mod.reason));
+    else if (saved && (!saved.enabledIds.length || !validModIds(saved.enabledIds))) info.append(element('p', 'requirement-issue', `${statusText(saved)} · edit in your loadout`));
+    row.append(info, element('span', `requirement-status${saved ? '' : ' is-missing'}`, saved ? 'Selected' : 'Missing'));
+    return row;
+  }));
+  $('requirements-status').textContent = feedback || (requirements.length
+    ? `${requirements.length - missing.length} selected · ${missing.length} missing`
+    : 'No dependencies listed on Steam.');
+  $('requirements-status').classList.toggle('needs-review', unavailable);
+  $('requirements-note').textContent = unavailable
+    ? 'Some dependencies could not be checked, including their nested dependencies. Review them on Steam.'
+    : 'Includes nested dependencies listed on Steam. Check descriptions for any extras.';
+  $('add-requirements').hidden = !requirements.length;
+  $('add-requirements').disabled = !missing.some(mod => mod.available);
+}
+
+async function loadRequirements() {
+  const session = dialogSession;
+  const id = activeMod.id;
+  requirements = null;
+  $('requirements-list').replaceChildren();
+  $('requirements-list').setAttribute('aria-busy', 'true');
+  $('requirements-status').textContent = 'Checking Steam dependencies…';
+  $('requirements-status').classList.remove('needs-review');
+  $('requirements-note').textContent = 'Includes nested dependencies listed on Steam. Check descriptions for any extras.';
+  $('add-requirements').hidden = false;
+  $('add-requirements').disabled = true;
+  $('retry-requirements').hidden = true;
+  try {
+    const data = await api(`/api/workshop?${new URLSearchParams({ action: 'requirements', id })}`);
+    if (session !== dialogSession) return;
+    requirements = data.requirements;
+    renderRequirements();
+  } catch (error) {
+    if (session !== dialogSession) return;
+    $('requirements-status').textContent = error.message;
+    $('requirements-status').classList.add('needs-review');
+    $('add-requirements').hidden = true;
+    $('retry-requirements').hidden = false;
+  } finally {
+    if (session === dialogSession) $('requirements-list').setAttribute('aria-busy', 'false');
+  }
+}
+
+$('retry-requirements').addEventListener('click', loadRequirements);
+$('add-requirements').addEventListener('click', () => {
+  if (!requirements) return;
+  const missing = requirements.filter(mod => mod.available && !selected.has(mod.id));
+  if (selected.size + missing.length > MAX_ITEMS) {
+    $('requirements-status').textContent = `Adding these dependencies would exceed ${MAX_ITEMS} items. Remove at least ${selected.size + missing.length - MAX_ITEMS} from your loadout first.`;
+    $('requirements-status').classList.add('needs-review');
+  } else {
+    missing.forEach(addMod);
+    persist(); renderSelection(); syncCards();
+    renderRequirements(`Added ${missing.length} ${missing.length === 1 ? 'dependency' : 'dependencies'}. Review their Mod IDs in your loadout.`);
+  }
+  $('requirements-status').focus({ preventScroll: true });
+});
 
 function updateDialogIds() {
   dialogIds = parseModIds($('dialog-mod-ids').value);
@@ -326,6 +397,8 @@ function updateDialogIds() {
 }
 
 async function openModDialog(mod, opener) {
+  const session = ++dialogSession;
+  requirements = null;
   activeMod = results.find(item => item.id === mod.id) || mod;
   dialogOpener = opener;
   dialogIds = [...(selected.get(mod.id)?.enabledIds ?? (mod.modIds.length === 1 ? mod.modIds : []))];
@@ -333,18 +406,19 @@ async function openModDialog(mod, opener) {
   renderDialogDetails(); updateDialogState();
   $('mod-dialog').showModal();
   $('mod-dialog').querySelector('.dialog-content').scrollTop = 0;
+  loadRequirements();
   if (activeMod.description !== undefined) return;
   $('dialog-description-text').textContent = 'Loading Workshop details…';
   try {
     const data = await api('/api/workshop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: mod.id }) });
-    if (!activeMod || activeMod.id !== mod.id) return;
+    if (session !== dialogSession) return;
     if (!data.items.length) throw new Error('This Workshop item is unavailable.');
     activeMod = data.items[0];
     const saved = selected.get(mod.id);
     if (saved) Object.assign(saved, activeMod);
     renderDialogDetails();
   } catch (error) {
-    if (activeMod?.id === mod.id) $('dialog-description-text').textContent = `${error.message} You can still edit saved Mod IDs or view the item on Steam.`;
+    if (session === dialogSession) $('dialog-description-text').textContent = `${error.message} You can still edit saved Mod IDs or view the item on Steam.`;
   }
 }
 
@@ -372,6 +446,8 @@ $('mod-dialog').addEventListener('click', event => {
   if (event.target === $('mod-dialog') && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) $('mod-dialog').close();
 });
 $('mod-dialog').addEventListener('close', () => {
+  dialogSession++;
+  requirements = null;
   const id = activeMod?.id;
   activeMod = null;
   const target = dialogOpener?.isConnected ? dialogOpener

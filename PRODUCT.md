@@ -20,7 +20,7 @@ Search or import Workshop items, select the desired mods, and copy semicolon-sep
 
 ## Operating Context
 
-The user wants to deploy on Vercel later. Workshop search uses a server-side Steam Web API key. Public item and collection lookups work without a key. Hostinger is the destination for copied configuration, not an automated integration.
+The user wants to deploy on Vercel later. Workshop search and dependency lookups use a server-side Steam Web API key. Public item and collection imports work without a key. Hostinger is the destination for copied configuration, not an automated integration.
 
 ## Capabilities and Constraints
 
@@ -32,6 +32,7 @@ The user wants to deploy on Vercel later. Workshop search uses a server-side Ste
 - Deduplicate Workshop IDs without changing selection order.
 - Extract suggested Mod IDs from descriptions and allow manual correction. Steam does not expose canonical internal Mod IDs.
 - One Workshop item may contain several optional or mutually exclusive mods.
+- Show direct and nested Steam dependencies in the mod modal with Selected or Missing status. Use the labels Dependencies and Add missing dependencies. Add missing available dependencies on request, deduplicate shared dependencies and cycles, and preserve existing selections and edited IDs. Explain unavailable dependencies; description-only dependencies and load-order rules still need manual review.
 - Persist selections in the browser; no account or database is required.
 - Build tags and descriptions are informational, not compatibility guarantees.
 

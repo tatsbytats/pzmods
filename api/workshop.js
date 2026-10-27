@@ -1,4 +1,4 @@
-import { importItems, searchItems, RequestError } from '../lib/workshop.js';
+import { importItems, searchItems, getRequirements, RequestError } from '../lib/workshop.js';
 
 async function readBody(req) {
   if (!req.headers['content-type']?.startsWith('application/json')) throw new RequestError('Send imports as JSON.', 415);
@@ -28,6 +28,8 @@ export default async function handler(req, res) {
       result = { searchEnabled: Boolean(process.env.STEAM_WEB_API_KEY?.trim()) };
     } else if (req.method === 'GET' && url.searchParams.get('action') === 'search') {
       result = await searchItems({ query: url.searchParams.get('q') || '', build: url.searchParams.get('build') || '', page: Number(url.searchParams.get('page') || 1), key: process.env.STEAM_WEB_API_KEY?.trim() }, undefined, signal);
+    } else if (req.method === 'GET' && url.searchParams.get('action') === 'requirements') {
+      result = await getRequirements({ id: url.searchParams.get('id'), key: process.env.STEAM_WEB_API_KEY?.trim() }, undefined, signal);
     } else if (req.method === 'POST') {
       const body = await readBody(req);
       result = await importItems(body?.input, undefined, signal);

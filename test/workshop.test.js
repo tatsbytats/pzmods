@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
-import { parseInput, extractModIds, normalizeItem, importItems, searchItems, steamRequest } from '../lib/workshop.js';
+import { parseInput, extractModIds, normalizeItem, importItems, searchItems, getRequirements, steamRequest } from '../lib/workshop.js';
 import handler from '../api/workshop.js';
 import { formatModIds } from '../public/format.js';
 
 const item = (id, extra = {}) => ({ publishedfileid: id, result: 1, consumer_app_id: 108600, title: `Mod ${id}`, description: `Mod ID: mod${id}`, ...extra });
 const requestIds = params => Object.entries(params).filter(([key]) => key.startsWith('publishedfileids[')).map(([, value]) => value);
+const requiredItem = (id, children = [], extra = {}) => ({ publishedfileid: id, result: 1, consumer_appid: 108600, file_type: 0, title: `Mod ${id}`, file_description: `Mod ID: mod${id}`, num_children: children.length, children: children.map(child => ({ publishedfileid: child, file_type: 0 })), ...extra });
 
 test('export format matches Build 41 or 42 without double prefixes or duplicate IDs', () => {
   assert.equal(formatModIds(['SpiffBoy', 'Other'], '42'), '\\SpiffBoy;\\Other');
@@ -117,6 +118,96 @@ test('Steam request failures return useful errors without exposing the API key',
     assert.equal(error.status, 502);
     return true;
   });
+  await assert.rejects(steamRequest('GetDetails', { key: 'secret-key' }), error => {
+    assert.match(error.message, /rejected the dependency lookup API key/);
+    assert.ok(!error.message.includes('secret-key'));
+    return true;
+  });
+});
+
+test('requirements follow nested links, deduplicate shared children and cycles, and preserve 64-bit IDs', async () => {
+  const large = '18446744073709551615';
+  const graph = { '1': ['2', '3', '2'], '2': [large], '3': [large, '1'], [large]: ['2'] };
+  const calls = [];
+  const result = await getRequirements({ id: '1', key: 'test-key' }, async (method, params) => {
+    assert.equal(method, 'GetDetails');
+    assert.equal(params.key, 'test-key');
+    const input = JSON.parse(params.input_json);
+    assert.equal(input.includechildren, true);
+    assert.equal(input.includetags, true);
+    calls.push(input.publishedfileids);
+    return { publishedfiledetails: input.publishedfileids.map(id => requiredItem(id, graph[id])) };
+  });
+  assert.deepEqual(calls, [['1'], ['2', '3'], [large]]);
+  assert.deepEqual(result.requirements.map(mod => mod.id), ['2', '3', large]);
+  assert.deepEqual(result.requirements.map(mod => mod.direct), [true, true, false]);
+  assert.ok(result.requirements.every(mod => mod.available));
+  assert.deepEqual(result.requirements[0].modIds, ['mod2']);
+});
+
+test('requirements expose unavailable, banned, private, other-game, and collection items without adding or expanding them', async () => {
+  const overrides = { '2': { result: 9 }, '3': { banned: true }, '4': { visibility: 1 }, '5': { consumer_appid: 730 }, '6': { file_type: 2 } };
+  const calls = [];
+  const result = await getRequirements({ id: '1', key: 'test-key' }, async (_, params) => {
+    const ids = JSON.parse(params.input_json).publishedfileids;
+    calls.push(ids);
+    return { publishedfiledetails: ids.filter(id => id !== '7').map(id => id === '1' ? requiredItem(id, ['2', '3', '4', '5', '6', '7']) : requiredItem(id, ['8'], overrides[id])) };
+  });
+  assert.equal(calls.length, 2);
+  assert.equal(result.requirements.length, 6);
+  assert.ok(result.requirements.every(mod => !mod.available && mod.reason && !mod.modIds));
+  assert.match(result.requirements[3].reason, /Not a Project Zomboid item/);
+  assert.match(result.requirements[4].reason, /Not a mod/);
+  await assert.rejects(getRequirements({ id: '2', key: 'test-key' }, async () => ({ publishedfiledetails: [] })), /Cannot check dependencies/);
+});
+
+test('requirements batch wide graphs and reject oversized graphs instead of silently truncating', async () => {
+  const calls = [];
+  const result = await getRequirements({ id: '1', key: 'test-key' }, async (_, params) => {
+    const ids = JSON.parse(params.input_json).publishedfileids;
+    calls.push(ids.length);
+    return { publishedfiledetails: ids.map(id => requiredItem(id, id === '1' ? Array.from({ length: 205 }, (_, i) => String(i + 2)) : [])) };
+  });
+  assert.deepEqual(calls, [1, 100, 100, 5]);
+  assert.equal(result.requirements.length, 205);
+  await assert.rejects(getRequirements({ id: '1', key: 'test-key' }, async () => ({ publishedfiledetails: [requiredItem('1', Array.from({ length: 300 }, (_, i) => String(i + 2)))] })), /exceed 300 Workshop items/);
+});
+
+test('requirements distinguish no requirements from incomplete metadata or lookup failures', async () => {
+  const result = await getRequirements({ id: '1', key: 'test-key' }, async () => ({ publishedfiledetails: [requiredItem('1', [], { children: undefined })] }));
+  assert.deepEqual(result.requirements, []);
+  for (const response of [{}, { result: 2, publishedfiledetails: [] }, { publishedfiledetails: [requiredItem('1', [], { children: {} })] }, { publishedfiledetails: [requiredItem('1', [], { num_children: 1 })] }, { publishedfiledetails: [requiredItem('1', ['invalid'])] }]) {
+    await assert.rejects(getRequirements({ id: '1', key: 'test-key' }, async () => response), /Steam returned/);
+  }
+  await assert.rejects(getRequirements({ id: '1', key: 'test-key' }, async () => { throw new Error('network failure'); }), /network failure/);
+  await assert.rejects(getRequirements({ id: '1' }), /STEAM_WEB_API_KEY/);
+  for (const id of ['0', '-1', 'abc', '18446744073709551616']) await assert.rejects(getRequirements({ id, key: 'test-key' }), /numeric Workshop ID/);
+});
+
+test('requirements HTTP route uses authenticated GET details and keeps the key server-side', async t => {
+  const previous = process.env.STEAM_WEB_API_KEY;
+  process.env.STEAM_WEB_API_KEY = 'requirements-test-secret';
+  t.after(() => { if (previous === undefined) delete process.env.STEAM_WEB_API_KEY; else process.env.STEAM_WEB_API_KEY = previous; });
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url.pathname, '/IPublishedFileService/GetDetails/v1/');
+    assert.equal(url.searchParams.get('key'), 'requirements-test-secret');
+    assert.equal(options.method, 'GET');
+    const ids = JSON.parse(url.searchParams.get('input_json')).publishedfileids;
+    return Response.json({ response: { publishedfiledetails: ids.map(id => requiredItem(id, id === '1' ? ['2'] : [])) } });
+  });
+  async function invoke(id) {
+    const req = { url: `/api/workshop?action=requirements&id=${id}`, method: 'GET' };
+    const res = { setHeader() {}, end(body) { this.body = JSON.parse(body); } };
+    await handler(req, res);
+    return res;
+  }
+  const res = await invoke('1');
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.requirements.map(mod => mod.id), ['2']);
+  assert.ok(!JSON.stringify(res.body).includes('requirements-test-secret'));
+  assert.equal((await invoke('invalid')).statusCode, 400);
+  delete process.env.STEAM_WEB_API_KEY;
+  assert.equal((await invoke('1')).statusCode, 503);
 });
 
 test('HTTP handler enforces JSON and rejects malformed imports without upstream calls', async () => {

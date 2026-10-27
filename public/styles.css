@@ -235,6 +235,21 @@ input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px;
 .suggestion[aria-pressed="true"] { color: var(--accent); border-color: #90aede; background: var(--selected); }
 .dialog-save-status { color: var(--accent); font-size: 11px; margin-top: 16px; }
 .dialog-save-status.needs-review { color: var(--warn); }
+.dialog-requirements { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.requirements-status { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.requirements-status.needs-review { color: var(--warn); }
+.requirements-list { list-style: none; padding: 0; margin: 10px 0; max-height: 220px; overflow-y: auto; overscroll-behavior: contain; }
+.requirements-list:empty { margin: 0; }
+.requirement-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.requirement-row:last-child { border-bottom: 0; }
+.requirement-row a { display: inline-block; color: var(--ink); font-size: 12px; overflow-wrap: anywhere; text-decoration: none; }
+.requirement-row a:hover { color: var(--accent); text-decoration: underline; }
+.requirement-meta { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.requirement-issue { margin-top: 4px; color: var(--warn); font-size: 11px; overflow-wrap: anywhere; }
+.requirement-status { color: var(--accent); font-size: 10px; padding-top: 2px; }
+.requirement-status.is-missing { color: var(--warn); }
+#add-requirements { width: 100%; min-height: 36px; margin-top: 8px; padding: 8px; font-size: 11px; }
+#requirements-note { margin-bottom: 0; }
 .dialog-footer { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; }
 .dialog-footer > div { display: flex; gap: 8px; }
 #dialog-loadout-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }

@@ -20,6 +20,7 @@
   FORM: User-pinned dark Steam library supersedes assigned control-panel direction, seed 47196fb1.
   REFINEMENT: User-requested compact, premium dark workspace. Graphite surfaces, Geist typography, quiet blue selection, and thumbnail-led cards.
   INTERACTION: Details and Mod ID editing share a native modal; the library stays compact and Hostinger exports stay in field order.
+  DEPENDENCIES: The modal lists direct and nested Steam dependencies with selection status and an explicit add-missing action.
   FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
   -->
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -140,8 +141,8 @@
 
     <section class="help" id="how-to-use" aria-labelledby="help-heading">
       <h2 id="help-heading">From Workshop to your server</h2>
-      <div class="help-columns"><p><strong>Pick your mods.</strong> Search by name or import a collection. Check build tags and each mod’s required items on Steam.</p><p><strong>Review Mod IDs.</strong> Open a mod’s details to edit its IDs or choose variants. Choose your server build for the correct export format.</p><p><strong>Paste into Hostinger.</strong> Use <b>Load Mods</b> (<code>Mods</code>) and <b>Install Workshop Items</b> (<code>WorkshopItems</code>) in server settings, not “Steam workshop items” under Updates. Save and restart your server.</p></div>
-      <p class="help-footnote"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>Map mods can also need a <code>Map</code> setting. This tool doesn’t check conflicts, add dependencies, or change your server.</p>
+      <div class="help-columns"><p><strong>Pick your mods.</strong> Search by name or import a collection. Open a mod’s details to check Dependencies and add missing mods.</p><p><strong>Review Mod IDs.</strong> Open a mod’s details to edit its IDs or choose variants. Choose your server build for the correct export format.</p><p><strong>Paste into Hostinger.</strong> Use <b>Load Mods</b> (<code>Mods</code>) and <b>Install Workshop Items</b> (<code>WorkshopItems</code>) in server settings, not “Steam workshop items” under Updates. Save and restart your server.</p></div>
+      <p class="help-footnote"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>Map mods can also need a <code>Map</code> setting. Check descriptions for extra dependencies and load order. This tool doesn’t check conflicts or change your server.</p>
     </section>
   </main>
   <dialog id="mod-dialog" class="mod-dialog" aria-labelledby="dialog-title">
@@ -158,6 +159,14 @@
         <p id="dialog-id-hint" class="editor-help">Separate IDs with semicolons. Edits to selected mods save automatically.</p>
         <div id="dialog-suggestions" class="suggestions" aria-label="Suggested Mod IDs"></div>
         <p id="dialog-save-status" class="dialog-save-status" role="status" aria-live="polite"></p>
+        <section class="dialog-requirements" aria-labelledby="requirements-heading">
+          <h3 id="requirements-heading">Dependencies</h3>
+          <p id="requirements-status" class="requirements-status" role="status" aria-live="polite" tabindex="-1">Checking Steam dependencies…</p>
+          <ul id="requirements-list" class="requirements-list" aria-label="Direct and nested dependencies" aria-busy="false"></ul>
+          <button id="add-requirements" class="button secondary" type="button" disabled>Add missing dependencies</button>
+          <button id="retry-requirements" class="text-button" type="button" hidden>Retry dependencies</button>
+          <p id="requirements-note" class="editor-help">Includes nested dependencies listed on Steam. Check descriptions for any extras.</p>
+        </section>
       </section>
       <section class="dialog-description" aria-labelledby="dialog-about-heading">
         <div id="dialog-preview" class="dialog-preview" hidden><img id="dialog-image" alt=""></div>
