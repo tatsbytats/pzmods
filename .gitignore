@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+.env.local
 .vercel/
 node_modules/
 .impeccable/review/

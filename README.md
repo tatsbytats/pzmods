@@ -1,6 +1,6 @@
 # Zomboid Loadout
 
-A small, dark Steam-style web app for choosing Project Zomboid mods and copying server configuration into Hostinger.
+A compact, dark Workshop library for choosing Project Zomboid mods and copying server configuration into Hostinger.
 
 ## Run locally
 
@@ -16,9 +16,11 @@ Open **http://localhost:3000**. Individual Workshop links, numeric IDs, and publ
 ### Enable Workshop search
 
 1. Get a Steam Web API key at https://steamcommunity.com/dev/apikey.
-2. Copy `.env.example` to `.env`.
-3. Set `STEAM_WEB_API_KEY=your_key` in `.env`.
+2. Copy `.env.example` to `.env.local`.
+3. Set `STEAM_WEB_API_KEY=your_key` in `.env.local`.
 4. Restart the local server.
+
+Both `npm start` and `npm run dev` load `.env` first, then `.env.local`. Values in `.env.local` override `.env`; existing process environment variables take precedence over both files.
 
 The key is used only by the backend. Do not put it in `public/`, browser code, or a Git commit. Without a key, the app explains how to enable search and still supports imports.
 
@@ -36,8 +38,8 @@ Alternatively, run `npx vercel` from this folder and follow the prompts. Deploym
 
 1. Search by name, or switch to **Import links or collection**. Blank searches show the most subscribed mods. Build filters use author-supplied Steam tags.
 2. Select individual mods or use **Select shown**. Filter an imported collection by name, Workshop ID, or detected Mod ID.
-3. Expand a selected mod to review its internal Mod IDs. When an item lists multiple variants, none are enabled automatically. Choose the variants you want or enter corrected IDs separated by semicolons.
-4. Use the up/down controls inside a selected mod to change export order. Dependencies are not fetched or sorted automatically.
+3. Open **Details & Mod IDs** on a card, or click a selected mod's name, to open its details modal. Review the full description, choose variants, or enter corrected IDs separated by semicolons. Changes to selected mods save automatically; unselected edits apply when you choose **Add to loadout**. Close with **Done**, the close button, Escape, or the backdrop.
+4. Use the up/down controls beside a selected mod to change export order. Dependencies are not fetched or sorted automatically.
 5. Choose **Server build**. Build 42 prefixes each exported Mod ID with `\`; Build 41 uses plain IDs. Copy **Load Mods** into Hostinger's **Load Mods** field (`Mods`), then copy **Install Workshop Items** into **Install Workshop Items** (`WorkshopItems`). Use the server settings, not **Steam workshop items** under **Updates**.
 6. Save the configuration and restart your game server.
 
@@ -76,4 +78,4 @@ Tests cover input validation, 64-bit IDs, Mod ID extraction, nested collections,
 - `server.mjs` — dependency-free local server for the same interface and API handler.
 - `vercel.json` — deployment output, function timeout, and browser security headers.
 
-Workshop thumbnails are loaded directly from Steam's returned preview URLs. The source of each thumbnail remains the item's Steam Workshop page; no third-party raster assets are bundled. Icons are original SVGs. This project is not affiliated with Valve, The Indie Stone, or Hostinger.
+Workshop thumbnails are loaded directly from Steam's returned preview URLs. The source of each thumbnail remains the item's Steam Workshop page; no third-party raster assets are bundled. Icons are original SVGs. The self-hosted Geist Latin variable font comes from Google Fonts (`https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2`); its SIL Open Font License is included at `public/fonts/OFL.txt`. This project is not affiliated with Valve, The Indie Stone, or Hostinger.

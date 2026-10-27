@@ -10,6 +10,7 @@ const files = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/format.js', ['format.js', 'text/javascript; charset=utf-8']],
   ['/favicon.svg', ['favicon.svg', 'image/svg+xml']],
+  ['/fonts/geist-latin.woff2', ['fonts/geist-latin.woff2', 'font/woff2']],
 ]);
 
 const server = createServer(async (req, res) => {

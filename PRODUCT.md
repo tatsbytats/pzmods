@@ -37,7 +37,7 @@ The user wants to deploy on Vercel later. Workshop search uses a server-side Ste
 
 ## Brand Commitments
 
-The user chose a dark, Steam-like library layout. Use a familiar task-focused interface rather than a marketing page.
+The user chose a dark, Steam-like library layout, then requested a more modern, clean, premium, compact treatment. Keep the familiar task-focused interface, use quiet graphite surfaces and refined typography, and open mod details and Mod ID editing in a modal instead of expanding cards.
 
 ## Evidence on Hand
 

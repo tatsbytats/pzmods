@@ -13,6 +13,9 @@ let searchQuery = '';
 let searchBuild = '';
 let previousSelection = null;
 let serverBuild = '';
+let activeMod = null;
+let dialogOpener = null;
+let dialogIds = [];
 
 function element(tag, className = '', text) {
   const node = document.createElement(tag);
@@ -174,10 +177,11 @@ function renderCard(mod) {
   title.append(steamLink(mod.id, mod.title));
   body.append(title, element('p', 'workshop-id', `#${mod.id}`));
   body.append(element('p', `mod-hint${mod.modIds.length !== 1 ? ' needs-review' : ''}`, mod.modIds.length === 1 ? '1 Mod ID found' : mod.modIds.length ? `${mod.modIds.length} Mod IDs · choose variants` : 'Mod ID needs manual entry'));
-  const details = element('details', 'mod-details');
-  details.append(element('summary', '', 'Details & Mod IDs'));
-  details.append(element('p', '', mod.description ? mod.description.slice(0, 800) + (mod.description.length > 800 ? '…' : '') : 'No description was provided. Open the Workshop page for details.'));
-  if (mod.modIds.length) details.append(element('code', '', mod.modIds.join(';')));
+  const details = element('button', 'mod-details', 'Details & Mod IDs');
+  details.type = 'button';
+  details.setAttribute('aria-haspopup', 'dialog');
+  details.append(icon('expand'));
+  details.addEventListener('click', () => openModDialog(mod, details));
   body.append(details);
   const label = element('label', 'select-mod');
   const checkbox = element('input');
@@ -200,7 +204,7 @@ function renderResults() {
   $('select-shown').disabled = !visible.length;
   $('filter-row').hidden = results.length < 2;
   $('empty-state').hidden = results.length > 0;
-  if (results.length) $('results-count').textContent = `${visible.length} of ${results.length} loaded mods · select the ones you want`;
+  if (results.length) $('results-count').textContent = `${visible.length} of ${results.length} mods shown`;
 }
 
 function updateOutputs() {
@@ -216,7 +220,7 @@ function updateOutputs() {
   $('copy-mods').disabled = !mods.length || missing > 0 || !serverBuild;
   $('missing-note').hidden = !mods.length || (!missing && Boolean(serverBuild));
   $('missing-note').textContent = missing
-    ? `${missing} ${missing === 1 ? 'item needs' : 'items need'} Mod IDs. Expand the selected ${missing === 1 ? 'mod' : 'mods'} to choose variants or enter IDs. Install Workshop Items is still ready to copy.`
+    ? `${missing} ${missing === 1 ? 'item needs' : 'items need'} Mod IDs. Open the selected ${missing === 1 ? 'mod' : 'mods'} to choose variants or enter IDs. Install Workshop Items is still ready to copy.`
     : 'Choose your server build below to format and copy Load Mods.';
   $('build-hint').textContent = serverBuild === '42' ? 'Build 42 adds a leading \\ to each Mod ID.' : serverBuild === '41' ? 'Build 41 uses plain Mod IDs, without a prefix.' : 'Match the build running on your game server.';
   $('copy-feedback').textContent = '';
@@ -235,7 +239,7 @@ function moveMod(id, offset) {
   [entries[index], entries[next]] = [entries[next], entries[index]];
   selected.clear(); entries.forEach(([key, value]) => selected.set(key, value));
   persist(); renderSelection();
-  const moved = document.querySelector(`[data-selected-id="${id}"] summary`);
+  const moved = document.querySelector(`[data-selected-id="${id}"] .selected-open`);
   moved?.focus();
 }
 
@@ -250,62 +254,130 @@ function iconButton(name, label, action) {
 }
 
 function renderSelection() {
-  const openIds = new Set([...$('selected-list').querySelectorAll('details[open]')].map(details => details.closest('li').dataset.selectedId));
   const entries = [...selected.values()];
   $('selected-list').replaceChildren(...entries.map((mod, index) => {
     const li = element('li', 'selected-item');
     li.dataset.selectedId = mod.id;
-    const details = element('details');
-    details.open = openIds.has(mod.id);
-    const summary = element('summary', '', mod.title);
-    const status = element('span', `id-status${!mod.enabledIds.length ? ' needs-review' : ''}`, statusText(mod));
-    summary.append(status);
-    const editor = element('div', 'mod-editor');
-    const label = element('label', '', 'Enabled Mod IDs');
-    label.htmlFor = `mod-ids-${mod.id}`;
-    const input = element('textarea');
-    input.id = label.htmlFor;
-    input.rows = 2;
-    input.maxLength = 8000;
-    input.placeholder = 'Enter IDs separated by semicolons';
-    input.spellcheck = false;
-    input.value = mod.enabledIds.join(';');
-    const suggestions = element('div', 'suggestions');
-    function changed() {
-      mod.enabledIds = parseModIds(input.value);
-      status.textContent = statusText(mod);
-      status.classList.toggle('needs-review', !mod.enabledIds.length || !validModIds(mod.enabledIds));
-      for (const button of suggestions.children) button.setAttribute('aria-pressed', String(mod.enabledIds.includes(button.textContent)));
-      persist(); updateOutputs();
-    }
-    input.addEventListener('input', changed);
-    editor.append(label, input, element('p', 'editor-help', mod.modIds.length > 1 ? 'Choose only the variants you need. These suggestions come from the description.' : 'Check the description or mod.info if this ID is missing or incorrect.'));
-    for (const id of mod.modIds) {
-      const button = element('button', 'suggestion', id);
-      button.type = 'button';
-      button.setAttribute('aria-pressed', String(mod.enabledIds.includes(id)));
-      button.addEventListener('click', () => { input.value = (mod.enabledIds.includes(id) ? mod.enabledIds.filter(value => value !== id) : [...mod.enabledIds, id]).join(';'); changed(); });
-      suggestions.append(button);
-    }
-    editor.append(suggestions);
-    const actions = element('div', 'editor-actions');
-    const reorder = element('div');
+    const open = element('button', 'selected-open');
+    open.type = 'button';
+    open.setAttribute('aria-haspopup', 'dialog');
+    open.setAttribute('aria-label', `Edit ${mod.title}`);
+    open.append(element('span', 'selected-title', mod.title), element('span', `id-status${!mod.enabledIds.length || !validModIds(mod.enabledIds) ? ' needs-review' : ''}`, statusText(mod)));
+    open.addEventListener('click', () => openModDialog(mod, open));
+    const actions = element('div', 'selected-actions');
     const up = iconButton('up', `Move ${mod.title} up`, () => moveMod(mod.id, -1));
     const down = iconButton('down', `Move ${mod.title} down`, () => moveMod(mod.id, 1));
     up.disabled = index === 0; down.disabled = index === entries.length - 1;
-    reorder.append(up, down);
-    actions.append(steamLink(mod.id, 'View on Steam'), reorder);
-    editor.append(actions); details.append(summary, editor);
     const remove = iconButton('close', `Remove ${mod.title}`, () => {
       selected.delete(mod.id); persist(); renderSelection(); syncCards();
-      const focusTarget = $('selected-list').querySelector('summary') || $('import-tab');
+      const focusTarget = $('selected-list').querySelector('.selected-open') || $('import-tab');
       focusTarget.focus();
     });
-    li.append(details, remove);
+    actions.append(up, down, remove);
+    li.append(open, actions);
     return li;
   }));
   updateOutputs();
 }
+
+function renderDialogDetails() {
+  $('dialog-title').textContent = activeMod.title;
+  $('dialog-workshop').textContent = `Workshop ID ${activeMod.id}`;
+  $('dialog-steam').href = steamLink(activeMod.id, '').href;
+  $('dialog-description-text').textContent = activeMod.description || 'No description was provided. Open the Workshop page for details and requirements.';
+  $('dialog-preview').hidden = !activeMod.image;
+  if (activeMod.image) $('dialog-image').src = activeMod.image;
+  else $('dialog-image').removeAttribute('src');
+  $('dialog-suggestions').replaceChildren(...activeMod.modIds.map(id => {
+    const button = element('button', 'suggestion', id);
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(dialogIds.includes(id)));
+    button.addEventListener('click', () => {
+      $('dialog-mod-ids').value = (dialogIds.includes(id) ? dialogIds.filter(value => value !== id) : [...dialogIds, id]).join(';');
+      updateDialogIds();
+    });
+    return button;
+  }));
+}
+
+function updateDialogState() {
+  const inLoadout = selected.has(activeMod.id);
+  const valid = validModIds(dialogIds);
+  $('dialog-loadout-state').replaceChildren(icon(inLoadout ? 'check' : 'box'), document.createTextNode(inLoadout ? 'In your loadout' : 'Not in your loadout'));
+  $('dialog-select').textContent = inLoadout ? 'Remove from loadout' : 'Add to loadout';
+  $('dialog-select').className = `button ${inLoadout ? 'secondary' : 'primary'}`;
+  $('dialog-select').disabled = !inLoadout && !valid;
+  $('dialog-mod-ids').setAttribute('aria-invalid', String(!valid));
+  $('dialog-save-status').classList.toggle('needs-review', !valid || !dialogIds.length);
+  $('dialog-save-status').textContent = !valid ? 'Use up to 100 IDs, each no longer than 160 characters.'
+    : !dialogIds.length ? 'Choose or enter Mod IDs to enable Load Mods copying.'
+    : inLoadout ? 'Mod IDs saved to your loadout.' : 'These IDs will be used when you add this mod.';
+}
+
+function updateDialogIds() {
+  dialogIds = parseModIds($('dialog-mod-ids').value);
+  const mod = selected.get(activeMod.id);
+  if (mod) {
+    mod.enabledIds = [...dialogIds];
+    persist(); renderSelection();
+  }
+  for (const button of $('dialog-suggestions').children) button.setAttribute('aria-pressed', String(dialogIds.includes(button.textContent)));
+  updateDialogState();
+}
+
+async function openModDialog(mod, opener) {
+  activeMod = results.find(item => item.id === mod.id) || mod;
+  dialogOpener = opener;
+  dialogIds = [...(selected.get(mod.id)?.enabledIds ?? (mod.modIds.length === 1 ? mod.modIds : []))];
+  $('dialog-mod-ids').value = dialogIds.join(';');
+  renderDialogDetails(); updateDialogState();
+  $('mod-dialog').showModal();
+  $('mod-dialog').querySelector('.dialog-content').scrollTop = 0;
+  if (activeMod.description !== undefined) return;
+  $('dialog-description-text').textContent = 'Loading Workshop details…';
+  try {
+    const data = await api('/api/workshop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: mod.id }) });
+    if (!activeMod || activeMod.id !== mod.id) return;
+    if (!data.items.length) throw new Error('This Workshop item is unavailable.');
+    activeMod = data.items[0];
+    const saved = selected.get(mod.id);
+    if (saved) Object.assign(saved, activeMod);
+    renderDialogDetails();
+  } catch (error) {
+    if (activeMod?.id === mod.id) $('dialog-description-text').textContent = `${error.message} You can still edit saved Mod IDs or view the item on Steam.`;
+  }
+}
+
+$('dialog-mod-ids').addEventListener('input', updateDialogIds);
+$('dialog-image').addEventListener('error', () => { $('dialog-preview').hidden = true; });
+$('dialog-select').addEventListener('click', () => {
+  if (selected.has(activeMod.id)) selected.delete(activeMod.id);
+  else {
+    if (!addMod(activeMod)) { $('dialog-save-status').textContent = `A loadout can hold ${MAX_ITEMS} Workshop items. Remove one before adding another.`; return; }
+    selected.get(activeMod.id).enabledIds = [...dialogIds];
+  }
+  persist(); renderSelection(); syncCards(); updateDialogState();
+});
+for (const id of ['dialog-close', 'dialog-done']) $(id).addEventListener('click', () => $('mod-dialog').close());
+$('mod-dialog').addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return;
+  const controls = [...$('mod-dialog').querySelectorAll('button:not(:disabled), a[href], textarea')].filter(control => control.getClientRects().length);
+  const first = controls[0];
+  const last = controls.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
+$('mod-dialog').addEventListener('click', event => {
+  const bounds = $('mod-dialog').getBoundingClientRect();
+  if (event.target === $('mod-dialog') && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) $('mod-dialog').close();
+});
+$('mod-dialog').addEventListener('close', () => {
+  const id = activeMod?.id;
+  activeMod = null;
+  const target = dialogOpener?.isConnected ? dialogOpener
+    : document.querySelector(`[data-selected-id="${id}"] .selected-open`) || document.querySelector(`[data-id="${id}"] .mod-details`) || $('import-tab');
+  target.focus({ preventScroll: true });
+});
 
 async function loadImport(input) {
   if (busy) return;
