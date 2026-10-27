@@ -38,7 +38,7 @@ Alternatively, run `npx vercel` from this folder and follow the prompts. Deploym
 2. Select individual mods or use **Select shown**. Filter an imported collection by name, Workshop ID, or detected Mod ID.
 3. Expand a selected mod to review its internal Mod IDs. When an item lists multiple variants, none are enabled automatically. Choose the variants you want or enter corrected IDs separated by semicolons.
 4. Use the up/down controls inside a selected mod to change export order. Dependencies are not fetched or sorted automatically.
-5. Choose **Server build**. Build 42 prefixes each exported Mod ID with `\`; Build 41 uses plain IDs. Copy **Workshop IDs** into Hostinger's `WorkshopItems` field and **Mod IDs** into its `Mods` field.
+5. Choose **Server build**. Build 42 prefixes each exported Mod ID with `\`; Build 41 uses plain IDs. Copy **Load Mods** into Hostinger's **Load Mods** field (`Mods`), then copy **Install Workshop Items** into **Install Workshop Items** (`WorkshopItems`). Use the server settings, not **Steam workshop items** under **Updates**.
 6. Save the configuration and restart your game server.
 
 When editing an `.ini` file instead of panel fields, add the setting name. For example, on Build 42:
@@ -48,7 +48,7 @@ WorkshopItems=3825220364
 Mods=\SpiffBoy
 ```
 
-The app exports semicolons without spaces. It removes duplicate IDs and preserves the selected order. Selections, manual Mod ID edits, and server build are saved in the current browser. **Clear** has an **Undo** action. The Build 42 prefix follows the [AMP Project Zomboid template's Load Mods instructions](https://github.com/CubeCoders/AMPTemplates/blob/main/project-zomboidconfig.json).
+Both output fields and clipboard values use a single line, with semicolons and no added spaces or setting-name prefixes. Long values scroll horizontally. The app removes duplicate IDs and preserves the selected order. Selections, manual Mod ID edits, and server build are saved in the current browser. **Clear** has an **Undo** action. The Build 42 prefix follows the [AMP Project Zomboid template's Load Mods instructions](https://github.com/CubeCoders/AMPTemplates/blob/main/project-zomboidconfig.json).
 
 ## Limits
 

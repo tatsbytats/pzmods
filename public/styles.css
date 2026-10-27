@@ -170,10 +170,10 @@ input[type="checkbox"] { accent-color: var(--accent); width: 17px; height: 17px;
 .output-label { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 14px; font-weight: 600; }
 .output-label code { font-size: 11px; font-weight: 400; color: var(--muted); }
 .field-help { font-size: 12px; color: var(--muted); margin: 4px 0 10px; }
-.output { font-size: 12px; color: var(--accent); padding: 10px; min-height: 60px; max-height: 180px; overflow-wrap: anywhere; }
+.output { display: block; width: 100%; font-size: 12px; color: var(--accent); padding: 10px; height: 44px; }
 .copy-button { width: 100%; margin-top: 9px; }
 .copy-button .icon { width: 16px; height: 16px; }
-.mod-label { margin-top: 22px; }
+.next-output { margin-top: 22px; }
 .copy-feedback { font-size: 12px; color: var(--accent); min-height: 23px; margin-top: 10px; }
 .storage-note { border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); padding: 13px 22px; display: flex; gap: 7px; align-items: center; }
 .storage-note .icon { width: 13px; height: 13px; }
@@ -200,8 +200,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 17px; height: 17px;
   .exports { padding: 14px 18px 0; }
   .field-help { margin: 3px 0 7px; }
   .field-help.build-hint { margin-bottom: 14px; }
-  .output { height: 42px; min-height: 42px; }
-  .mod-label { margin-top: 14px; }
+  .output { height: 42px; }
+  .next-output { margin-top: 14px; }
   .copy-button { margin-top: 7px; }
   .copy-feedback { margin-top: 6px; }
 }

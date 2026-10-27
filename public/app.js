@@ -216,8 +216,8 @@ function updateOutputs() {
   $('copy-mods').disabled = !mods.length || missing > 0 || !serverBuild;
   $('missing-note').hidden = !mods.length || (!missing && Boolean(serverBuild));
   $('missing-note').textContent = missing
-    ? `${missing} ${missing === 1 ? 'item needs' : 'items need'} Mod IDs. Expand the selected ${missing === 1 ? 'mod' : 'mods'} to choose variants or enter IDs. Workshop IDs are still ready to copy.`
-    : 'Choose your server build below to format and copy Mod IDs.';
+    ? `${missing} ${missing === 1 ? 'item needs' : 'items need'} Mod IDs. Expand the selected ${missing === 1 ? 'mod' : 'mods'} to choose variants or enter IDs. Install Workshop Items is still ready to copy.`
+    : 'Choose your server build below to format and copy Load Mods.';
   $('build-hint').textContent = serverBuild === '42' ? 'Build 42 adds a leading \\ to each Mod ID.' : serverBuild === '41' ? 'Build 41 uses plain Mod IDs, without a prefix.' : 'Match the build running on your game server.';
   $('copy-feedback').textContent = '';
 }
@@ -367,11 +367,11 @@ $('undo-clear').addEventListener('click', () => {
 async function copyOutput(id, label) {
   const output = $(id);
   if (!output.value) return;
-  try { await navigator.clipboard.writeText(output.value); $('copy-feedback').textContent = `${label} copied. Paste the value into Hostinger.`; }
+  try { await navigator.clipboard.writeText(output.value); $('copy-feedback').textContent = `Copied. Paste into Hostinger’s “${label}” field.`; }
   catch { output.focus(); output.select(); $('copy-feedback').textContent = 'Clipboard unavailable. The value is selected; press Ctrl+C or use Copy.'; }
 }
-$('copy-workshop').addEventListener('click', () => copyOutput('workshop-output', 'Workshop IDs'));
-$('copy-mods').addEventListener('click', () => copyOutput('mods-output', 'Mod IDs'));
+$('copy-workshop').addEventListener('click', () => copyOutput('workshop-output', 'Install Workshop Items'));
+$('copy-mods').addEventListener('click', () => copyOutput('mods-output', 'Load Mods'));
 $('server-build').addEventListener('change', () => { serverBuild = $('server-build').value; persist(); updateOutputs(); });
 
 renderSelection();

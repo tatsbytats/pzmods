@@ -27,6 +27,7 @@ The user wants to deploy on Vercel later. Workshop search uses a server-side Ste
 - Scope Steam content to Project Zomboid, App ID 108600.
 - Support Workshop search, individual links or numeric IDs, and public collections.
 - Keep Workshop IDs separate from internal Mod IDs.
+- Match the Hostinger fields shown by the user: Load Mods first (`Mods`), then Install Workshop Items (`WorkshopItems`). Export and copy each value on one semicolon-separated line.
 - Require a server-build choice for Mod ID exports. The AMP template specifies a leading backslash for each Build 42 Mod ID; Build 41 uses plain IDs.
 - Deduplicate Workshop IDs without changing selection order.
 - Extract suggested Mod IDs from descriptions and allow manual correction. Steam does not expose canonical internal Mod IDs.

@@ -106,22 +106,22 @@
       </section>
 
       <aside id="loadout" class="loadout" aria-labelledby="loadout-heading">
-        <div class="loadout-header"><h2 id="loadout-heading">Your loadout <span id="selection-count" class="count">0</span></h2><button id="clear-selection" class="text-button" type="button" disabled>Clear</button></div>
-        <p class="loadout-intro">Only selected mods go into your export.</p>
+        <div class="loadout-header"><h2 id="loadout-heading">Hostinger export <span id="selection-count" class="count">0</span></h2><button id="clear-selection" class="text-button" type="button" disabled>Clear</button></div>
+        <p class="loadout-intro">Paste each value into its matching server field.</p>
         <p id="missing-note" class="missing-note" hidden></p>
 
         <div class="exports">
           <div class="export-build"><label for="server-build">Server build</label><select id="server-build" aria-describedby="build-hint"><option value="">Choose build…</option><option value="42">Build 42</option><option value="41">Build 41</option></select></div>
           <p id="build-hint" class="field-help build-hint">Match the build running on your game server.</p>
-          <div class="output-label"><label for="workshop-output">Workshop IDs</label><code>WorkshopItems</code></div>
-          <p class="field-help">Tells your server what to download.</p>
-          <textarea id="workshop-output" class="output" rows="2" readonly placeholder="3825220364;…" spellcheck="false" aria-label="Selected Workshop IDs, separated by semicolons"></textarea>
-          <button class="button primary copy-button" id="copy-workshop" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Workshop IDs</span></button>
+          <div class="output-label"><label for="mods-output">Load Mods</label><code>Mods</code></div>
+          <p id="mods-help" class="field-help">Mod IDs, separated by semicolons. One line.</p>
+          <input id="mods-output" class="output" type="text" readonly placeholder="Choose your server build above" spellcheck="false" aria-describedby="mods-help">
+          <button class="button secondary copy-button" id="copy-mods" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Load Mods</span></button>
 
-          <div class="output-label mod-label"><label for="mods-output">Mod IDs</label><code>Mods</code></div>
-          <p class="field-help">Tells your game what to enable.</p>
-          <textarea id="mods-output" class="output" rows="2" readonly placeholder="Choose your server build above" spellcheck="false" aria-label="Selected internal Mod IDs, separated by semicolons"></textarea>
-          <button class="button secondary copy-button" id="copy-mods" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Mod IDs</span></button>
+          <div class="output-label next-output"><label for="workshop-output">Install Workshop Items</label><code>WorkshopItems</code></div>
+          <p id="workshop-help" class="field-help">Workshop IDs, separated by semicolons. One line.</p>
+          <input id="workshop-output" class="output" type="text" readonly placeholder="3825220364;…" spellcheck="false" aria-describedby="workshop-help">
+          <button class="button primary copy-button" id="copy-workshop" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Install Workshop Items</span></button>
           <p id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></p>
         </div>
         <h3 class="selected-heading">Selected mods</h3>
@@ -134,7 +134,7 @@
 
     <section class="help" id="how-to-use" aria-labelledby="help-heading">
       <h2 id="help-heading">From Workshop to your server</h2>
-      <div class="help-columns"><p><strong>Pick your mods.</strong> Search by name or import a collection. Check build tags and each mod’s required items on Steam.</p><p><strong>Review Mod IDs.</strong> Expand a selected mod to edit its IDs or choose variants. Choose your server build for the correct export format.</p><p><strong>Paste into Hostinger.</strong> Copy the two values into <code>WorkshopItems</code> and <code>Mods</code>. Save your settings, then restart your server.</p></div>
+      <div class="help-columns"><p><strong>Pick your mods.</strong> Search by name or import a collection. Check build tags and each mod’s required items on Steam.</p><p><strong>Review Mod IDs.</strong> Expand a selected mod to edit its IDs or choose variants. Choose your server build for the correct export format.</p><p><strong>Paste into Hostinger.</strong> Use <b>Load Mods</b> (<code>Mods</code>) and <b>Install Workshop Items</b> (<code>WorkshopItems</code>) in server settings, not “Steam workshop items” under Updates. Save and restart your server.</p></div>
       <p class="help-footnote"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>Map mods can also need a <code>Map</code> setting. This tool doesn’t check conflicts, add dependencies, or change your server.</p>
     </section>
   </main>
