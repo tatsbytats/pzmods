@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#15202e">
+  <meta name="description" content="Choose Project Zomboid Workshop mods and copy your WorkshopItems and Mods lists for your server.">
+  <title>Zomboid Loadout — Workshop mod picker</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <!--
+  THESIS: A working mod library with a persistent, editable export list, not a marketing landing page.
+  OWN-WORLD: User-pinned Steam-like dark steel panels, cool blue actions, thumbnail-led library, plain UI typography.
+  STORY: Find or import mods, choose exactly what to enable, then copy the two distinct server settings.
+  FIRST VIEWPORT: Compact brand bar; left search/import work area; right sticky loadout with both copy actions visible.
+  FORM: User-pinned dark Steam library supersedes assigned control-panel direction, seed 47196fb1.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+  -->
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-box" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z M3 8v9l9 5 9-5V8 M12 13v9 M7.5 5.5l9 5"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24"><path d="m10 13 4-4 M8 15l-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0 M16 9l2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(0 -1) scale(.92)"/></symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="icon-external" viewBox="0 0 24 24"><path d="M14 3h7v7 M21 3 10 14 M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12 M18 6 6 18"/></symbol>
+    <symbol id="icon-up" viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></symbol>
+    <symbol id="icon-down" viewBox="0 0 24 24"><path d="m6 10 6 6 6-6"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6 M12 7v.2"/></symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24"><path d="M9 6h12 M9 12h12 M9 18h12 M3 6h.1 M3 12h.1 M3 18h.1"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Skip to mod picker</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Zomboid Loadout home">
+      <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#icon-box"/></svg></span>
+      <span>Zomboid <strong>Loadout</strong></span>
+    </a>
+    <nav aria-label="Helpful links">
+      <a href="#how-to-use">How to use</a>
+      <a class="steam-link" href="https://steamcommunity.com/app/108600/workshop/" target="_blank" rel="noopener noreferrer">Steam Workshop <svg class="icon" aria-hidden="true"><use href="#icon-external"/></svg></a>
+    </nav>
+  </header>
+
+  <main id="main" class="page">
+    <div class="page-heading">
+      <div><h1>Good mods. One ready-to-copy list.</h1><p>Build your Project Zomboid loadout, then take it to your server.</p></div>
+      <a href="#loadout" class="loadout-jump"><svg class="icon" aria-hidden="true"><use href="#icon-list"/></svg><span id="jump-count">0 selected</span></a>
+    </div>
+
+    <div class="workspace">
+      <section class="library" aria-label="Find Workshop mods">
+        <div class="finder">
+          <div class="tabs" role="tablist" aria-label="Add mods">
+            <button class="tab" id="search-tab" role="tab" aria-selected="true" aria-controls="search-panel"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>Search Workshop</button>
+            <button class="tab" id="import-tab" role="tab" aria-selected="false" aria-controls="import-panel" tabindex="-1"><svg class="icon" aria-hidden="true"><use href="#icon-link"/></svg>Import links or collection</button>
+          </div>
+
+          <div id="search-panel" role="tabpanel" aria-labelledby="search-tab">
+            <form id="search-form">
+              <label for="search-input">Find your next mod</label>
+              <div class="search-row">
+                <div class="search-field"><svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg><input id="search-input" type="search" placeholder="Try vehicles, maps, quality of life…" maxlength="120" autocomplete="off"></div>
+                <button class="button primary" id="search-button" type="submit">Search</button>
+              </div>
+              <div class="search-options"><label for="build-filter">Game build</label><select id="build-filter"><option value="">All builds</option value="Build 42">Build 42</option><option value="Build 41">Build 41</option></select><span>Blank search shows most subscribed.</span></div>
+            </form>
+            <details class="setup-note" id="search-setup" hidden>
+              <summary>Enable search with a Steam API key</summary>
+              <p>Set <code>STEAM_WEB_API_KEY</code> in Vercel’s environment variables, then redeploy. For local use, put it in <code>.env</code> and restart the server.</p>
+              <p><a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener noreferrer">Get a Steam Web API key</a>. The key stays on the server. Importing links and collections already works without one.</p>
+              <button class="text-button" id="setup-import" type="button">Import mods instead</button>
+            </details>
+          </div>
+
+          <div id="import-panel" role="tabpanel" aria-labelledby="import-tab" hidden>
+            <form id="import-form">
+              <label for="import-input">Workshop links, IDs, or a public collection</label>
+              <textarea id="import-input" rows="3" maxlength="12000" placeholder="https://steamcommunity.com/sharedfiles/filedetails/?id=3825220364" aria-describedby="import-hint" required></textarea>
+              <div class="import-bottom"><p id="import-hint">Separate entries with spaces, commas, semicolons, or new lines.</p><button class="button primary" id="import-button" type="submit">Load mods</button></div>
+            </form>
+          </div>
+        </div>
+
+        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+        <details id="import-warnings" class="warnings" hidden><summary id="warnings-summary"></summary><ul id="warnings-list"></ul></details>
+
+        <div class="results-toolbar">
+          <div><h2 id="results-heading">Your discovery starts here</h2><span id="results-count" class="muted">Search Steam or bring your own collection.</span></div>
+          <button id="select-shown" class="text-button" type="button" disabled>Select shown</button>
+        </div>
+        <div id="filter-row" class="filter-row" hidden><label for="result-filter" class="visually-hidden">Filter loaded mods by name or ID</label><input id="result-filter" type="search" placeholder="Filter loaded mods by name or ID…" autocomplete="off"></div>
+
+        <div id="results" class="mod-grid" aria-busy="false"></div>
+        <div id="empty-state" class="empty-state">
+          <div class="empty-illustration" aria-hidden="true"><svg class="icon"><use href="#icon-box"/></svg><svg class="icon small-box"><use href="#icon-check"/></svg></div>
+          <h3>A better way to pack for the apocalypse.</h3>
+          <p>Load mods, pick your favorites, and leave the ID formatting to us.</p>
+          <button id="example-button" class="button secondary" type="button">Try it with SpiffBoy <svg class="icon" aria-hidden="true"><use href="#icon-box"/></svg></button>
+          <span class="example-caption">A real Build 42 Workshop mod. Nothing is installed.</span>
+        </div>
+        <div class="pagination" id="pagination" hidden><button class="button secondary" id="previous-page" type="button">Previous</button><span id="page-label"></span><button class="button secondary" id="next-page" type="button">Next</button></div>
+      </section>
+
+      <aside id="loadout" class="loadout" aria-labelledby="loadout-heading">
+        <div class="loadout-header"><h2 id="loadout-heading">Your loadout <span id="selection-count" class="count">0</span></h2><button id="clear-selection" class="text-button" type="button" disabled>Clear</button></div>
+        <p class="loadout-intro">Only selected mods go into your export.</p>
+        <p id="missing-note" class="missing-note" hidden></p>
+
+        <div class="exports">
+          <div class="export-build"><label for="server-build">Server build</label><select id="server-build" aria-describedby="build-hint"><option value="">Choose build…</option><option value="42">Build 42</option><option value="41">Build 41</option></select></div>
+          <p id="build-hint" class="field-help build-hint">Match the build running on your game server.</p>
+          <div class="output-label"><label for="workshop-output">Workshop IDs</label><code>WorkshopItems</code></div>
+          <p class="field-help">Tells your server what to download.</p>
+          <textarea id="workshop-output" class="output" rows="2" readonly placeholder="3825220364;…" spellcheck="false" aria-label="Selected Workshop IDs, separated by semicolons"></textarea>
+          <button class="button primary copy-button" id="copy-workshop" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Workshop IDs</span></button>
+
+          <div class="output-label mod-label"><label for="mods-output">Mod IDs</label><code>Mods</code></div>
+          <p class="field-help">Tells your game what to enable.</p>
+          <textarea id="mods-output" class="output" rows="2" readonly placeholder="Choose your server build above" spellcheck="false" aria-label="Selected internal Mod IDs, separated by semicolons"></textarea>
+          <button class="button secondary copy-button" id="copy-mods" type="button" disabled><svg class="icon" aria-hidden="true"><use href="#icon-copy"/></svg><span>Copy Mod IDs</span></button>
+          <p id="copy-feedback" class="copy-feedback" role="status" aria-live="polite"></p>
+        </div>
+        <h3 class="selected-heading">Selected mods</h3>
+        <div id="selection-empty" class="selection-empty"><svg class="icon" aria-hidden="true"><use href="#icon-list"/></svg><p>Your list is still empty.<br>Select a mod to start your loadout.</p></div>
+        <ol id="selected-list" class="selected-list" aria-label="Selected mods in export order"></ol>
+        <div id="undo-row" class="undo-row" hidden><span>Loadout cleared.</span><button id="undo-clear" class="text-button" type="button">Undo</button></div>
+        <p class="storage-note" id="storage-note"><svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg><span>Saved in this browser automatically</span></p>
+      </aside>
+    </div>
+
+    <section class="help" id="how-to-use" aria-labelledby="help-heading">
+      <h2 id="help-heading">From Workshop to your server</h2>
+      <div class="help-columns"><p><strong>Pick your mods.</strong> Search by name or import a collection. Check build tags and each mod’s required items on Steam.</p><p><strong>Review Mod IDs.</strong> Expand a selected mod to edit its IDs or choose variants. Choose your server build for the correct export format.</p><p><strong>Paste into Hostinger.</strong> Copy the two values into <code>WorkshopItems</code> and <code>Mods</code>. Save your settings, then restart your server.</p></div>
+      <p class="help-footnote"><svg class="icon" aria-hidden="true"><use href="#icon-info"/></svg>Map mods can also need a <code>Map</code> setting. This tool doesn’t check conflicts, add dependencies, or change your server.</p>
+    </section>
+  </main>
+  <footer class="site-footer"><span>Zomboid Loadout <span class="footer-divider">/</span> An unofficial Workshop companion</span><a href="https://www.hostinger.com/tutorials/how-to-host-a-project-zomboid-server/" target="_blank" rel="noopener noreferrer">Hostinger setup guide <svg class="icon" aria-hidden="true"><use href="#icon-external"/></svg></a></footer>
+  <noscript><p class="message">Enable JavaScript to search, select mods, and format your loadout.</p></noscript>
+</body>
+</html>
